@@ -10,7 +10,6 @@ path_main = /var/www/html/
 [SERVER]
 server_ip = 10.10.0.16
 user = ubuntu
-folder_deploy = jbernal
 path_main = /var/www/html/
 
 [GITHUB]

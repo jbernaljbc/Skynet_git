@@ -56,120 +56,113 @@ proc cfg::parse_file {filename} {
 	while {![eof $fd]} {
 		set line [string trim [gets $fd] " "]
 		if {$line == ""} continue
-		switch -regexp -- $line {
-			^#.* { }
-			^\\[.*\\]$ {
-				cfg::add_section $line
+			switch -regexp -- $line {
+				^#.* { }
+				^\\[.*\\]$ {
+					cfg::add_section $line
+				}
+				.*=.* {
+					set pair [split $line =]
+					set name [string trim [lindex $pair 0] " "]
+					set value [string trim [lindex $pair 1] " "]
+					cfg::setvar $name $value $cursection
+				} 
+				default {
+					error "Error parsing $filename (line: $line_no): $line"
+				}
 			}
-			.*=.* {
-				set pair [split $line =]
-				set name [string trim [lindex $pair 0] " "]
-				set value [string trim [lindex $pair 1] " "]
-				cfg::setvar $name $value $cursection
-			} 
-			default {
-				error "Error parsing $filename (line: $line_no): $line"
-			}
+			incr line_no
 		}
-		incr line_no
-	}
-	close $fd
-}
-
-cfg::parse_file repo.cfg
-
-set server 				$cfg::SERVER(server_ip)
-set path_main  			$cfg::SERVER(path_main)
-set user_server			$cfg::SERVER(user)
-set folder_deploy		$cfg::SERVER(folder_deploy)
-set repositorio 		$cfg::GITHUB(repositorio)
-set user_github			$cfg::GITHUB(user)
-set pass_github			$cfg::GITHUB(pass)
-set pem_file 			$cfg::LOCAL(pem_file)
-set systemTime 			[clock seconds]
-set iso_date 			[clock format $systemTime -format {%Y%m%d%H%M%S}]
-
-set branch_github		[lindex $argv 0]
-
-set path_proyect 		$path_main[concat $folder_deploy]
-set path_proyect_new	$path_main$folder_deploy[concat _$iso_date]
-set sleep_time 			1
-
-set timeout -1
-
-proc log {tpe msg} {
-	if {$tpe == "WRN"} {
-		puts "= WRNG  : $msg\r"
+		close $fd
 	}
 
-	if {$tpe == "ERR"} {
-		puts "= ERROR : $msg\r"
+	set config_path "/home/jbernal/Documentos/Tcl/Skynet_git/"
+
+	cfg::parse_file $config_path[concat repo.cfg]
+
+	set server 				$cfg::SERVER(server_ip)
+	set path_main  			$cfg::SERVER(path_main)
+	set user_server			$cfg::SERVER(user)
+	set repositorio 		$cfg::GITHUB(repositorio)
+	set user_github			$cfg::GITHUB(user)
+	set pass_github			$cfg::GITHUB(pass)
+	set pem_file 			$cfg::LOCAL(pem_file)
+	set systemTime 			[clock seconds]
+	set iso_date 			[clock format $systemTime -format {%Y%m%d%H%M%S}]
+
+	set branch_github		[lindex $argv 0]
+	set folder_deploy		[lindex $argv 1]
+
+	set path_proyect 		$path_main[concat $folder_deploy]
+	set path_proyect_new	$path_main$folder_deploy[concat _$iso_date]
+
+	set timeout -1
+
+	if { $branch_github == "" } {
+		puts "DEBE ESPECIFICAR BRANCH GITHUB\n";
+		exit 1
 	}
 
-	if {$tpe == "INF"} {
-		puts "= INFO  : $msg\r"
+	if { $folder_deploy == "" } {
+		puts "DEBE ESPECIFICAR CARPETA PARA DEPLOY\n";
+		exit 1
 	}
-}
 
-if { $branch_github == "" } {
-	puts "DEBE ESPECIFICAR BRANCH GITHUB\n";
-	exit 1
-}
+	spawn ssh -i $pem_file $user_server@$server
+	expect "$ "
 
-sleep $sleep_time
+	send "sudo su\r"
+	expect "# "
 
-spawn ssh -i $pem_file $user_server@$server
-expect "$ "
+	send "mv $path_proyect $path_proyect_new\r"
+	expect "# "
 
-send "sudo su\r"
-expect "# "
+	send "mkdir $path_proyect\r"
+	expect "# "
 
-send "mv $path_proyect $path_proyect_new\r"
-expect "# "
+	send "chown ubuntu:ubuntu $path_proyect -R\r"
+	expect "# "
 
-send "mkdir $path_proyect\r"
-expect "# "
+	send "su ubuntu\r"
+	expect "$ "
 
-send "chown ubuntu:ubuntu $path_proyect -R\r"
-expect "# "
+	send "cd $path_proyect\r"
+	expect "$ "
 
-send "su ubuntu\r"
-expect "$ "
+	send "git clone $repositorio $path_proyect\r"
+	expect "*sername* "
 
-send "cd $path_proyect\r"
-expect "$ "
+	send "$user_github\r"
+	expect "*assw*"
 
-send "git clone $repositorio $path_proyect\r"
-expect "*sername* "
-
-send "$user_github\r"
-expect "*assw*"
-
-send "$pass_github\r"
-expect {
-	"*Checking connectivity... done*" {
-		puts "poyecto ok"
+	send "$pass_github\r"
+	expect {
+		"*Checking connectivity... done*" {
+			puts "poyecto ok"
+		}
 	}
-}
 
-send "git config credential.helper store\r"
-expect "$ "
+	send "git config credential.helper store\r"
+	expect "$ "
 
-send "git checkout $branch_github\r"
-expect "$ "
+	send "git checkout --track origin/$branch_github\r"
+	expect "$ "
 
-send "git pull origin $branch_github\r"
-expect "$ "
+	send "git checkout $branch_github\r"
+	expect "$ "
 
-send "sudo chmod 777 storage/ -R\r"
-expect "$ "
+	send "git pull origin $branch_github\r"
+	expect "$ "
 
-send "cp ../mastergeo/.env .\r"
-expect "$ "
+	send "sudo chmod 777 storage/ -R\r"
+	expect "$ "
 
-send "composer install\r"
-expect {
-	"*ompiling common classes*" {
-		puts "OK CTM!"
+	send "cp ../mastergeo/.env .\r"
+	expect "$ "
+
+	send "composer install\r"
+	expect {
+		"*ompiling common classes*" {
+			puts "OK CTM!"
+		}
 	}
-}

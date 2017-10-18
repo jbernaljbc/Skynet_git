@@ -56,134 +56,115 @@ proc cfg::parse_file {filename} {
 	while {![eof $fd]} {
 		set line [string trim [gets $fd] " "]
 		if {$line == ""} continue
-		switch -regexp -- $line {
-			^#.* { }
-			^\\[.*\\]$ {
-				cfg::add_section $line
+			switch -regexp -- $line {
+				^#.* { }
+				^\\[.*\\]$ {
+					cfg::add_section $line
+				}
+				.*=.* {
+					set pair [split $line =]
+					set name [string trim [lindex $pair 0] " "]
+					set value [string trim [lindex $pair 1] " "]
+					cfg::setvar $name $value $cursection
+				} 
+				default {
+					error "Error parsing $filename (line: $line_no): $line"
+				}
 			}
-			.*=.* {
-				set pair [split $line =]
-				set name [string trim [lindex $pair 0] " "]
-				set value [string trim [lindex $pair 1] " "]
-				cfg::setvar $name $value $cursection
-			} 
-			default {
-				error "Error parsing $filename (line: $line_no): $line"
-			}
+			incr line_no
 		}
-		incr line_no
-	}
-	close $fd
-}
-
-cfg::parse_file repo.cfg
-
-set server 				$cfg::SERVER(server_ip)
-set path_main_remote 	$cfg::SERVER(path_main)
-set user_server			$cfg::SERVER(user)
-set folder_deploy		$cfg::SERVER(folder_deploy)
-set user_local 			$cfg::LOCAL(user_local)
-set pass_local 			$cfg::LOCAL(pass_local)
-set path_main_local 	$cfg::LOCAL(path_main)
-set pem_file 			$cfg::LOCAL(pem_file)
-set repositorio 		$cfg::GITHUB(repositorio)
-set user_github			$cfg::GITHUB(user)
-set pass_github			$cfg::GITHUB(pass)
-set systemTime 			[clock seconds]
-set iso_date 			[clock format $systemTime -format {%Y%m%d%H%M%S}]
-
-set proyect_local		[lindex $argv 0]
-set branch_github		[lindex $argv 1]
-set message_commit		[lindex $argv 2]
-
-set path_proyect_remote $path_main_remote[concat $folder_deploy]
-set sleep_time 			1
-
-set timeout -1
-
-proc log {tpe msg} {
-	if {$tpe == "WRN"} {
-		puts "= WRNG  : $msg\r"
+		close $fd
 	}
 
-	if {$tpe == "ERR"} {
-		puts "= ERROR : $msg\r"
+	cfg::parse_file repo.cfg
+
+	set server 				$cfg::SERVER(server_ip)
+	set path_main_remote 	$cfg::SERVER(path_main)
+	set user_server			$cfg::SERVER(user)
+	set user_local 			$cfg::LOCAL(user_local)
+	set pass_local 			$cfg::LOCAL(pass_local)
+	set path_main_local 	$cfg::LOCAL(path_main)
+	set pem_file 			$cfg::LOCAL(pem_file)
+	set repositorio 		$cfg::GITHUB(repositorio)
+	set user_github			$cfg::GITHUB(user)
+	set pass_github			$cfg::GITHUB(pass)
+	set systemTime 			[clock seconds]
+	set iso_date 			[clock format $systemTime -format {%Y%m%d%H%M%S}]
+
+	set path_local_proyect	[lindex $argv 0]
+	set folder_deploy 		[lindex $argv 1]
+	set branch_github		[lindex $argv 2]
+	set message_commit		[lindex $argv 3]
+
+	set path_remote_proyect $path_main_remote[concat $folder_deploy]
+	set timeout -1
+
+	if { $path_local_proyect == "" } {
+		puts "DEBE ESPECIFICAR PATH DE PROYECTO LOCAL\n";
+		exit 1
+	}
+	
+	if { $folder_deploy == "" } {
+		puts "DEBE ESPECIFICAR NOMBRE CARPETA PARA DEPLOY\n";
+		exit 1
 	}
 
-	if {$tpe == "INF"} {
-		puts "= INFO  : $msg\r"
+	if { $branch_github == "" } {
+		puts "DEBE ESPECIFICAR BRANCH GITHUB\n";
+		exit 1
 	}
-}
 
-if { $folder_deploy == "" } {
-	puts "DEBE ESPECIFICAR NOMBRE CARPETA\n";
-	exit 1
-}
-
-if { $user_github == "" } {
-	puts "DEBE ESPECIFICAR USER GITHUB\n";
-	exit 1
-}
-
-if { $pass_github == "" } {
-	puts "DEBE ESPECIFICAR PASS GITHUB\n";
-	exit 1
-}
-
-if { $branch_github == "" } {
-	puts "DEBE ESPECIFICAR BRANCH GITHUB\n";
-	exit 1
-}
-
-
-sleep $sleep_time
-
-spawn su $user_local
-expect {
-	"*sword*" {
-		exp_send "$pass_local\r"
-		expect "$ "
+	if { $message_commit == "" } {
+		puts "DEBE ESPECIFICAR MESSAGE GITHUB\n";
+		exit 1
 	}
-	"*ontra*" {
-		exp_send "$pass_local\r"
-		expect "$ "
+
+	spawn su $user_local
+	expect {
+		"*sword*" {
+			exp_send "$pass_local\r"
+			expect "$ "
+		}
+		"*ontra*" {
+			exp_send "$pass_local\r"
+			expect "$ "
+		}
 	}
-}
 
-send "cd $path_main_local$proyect_local\r"
-expect "$ "
+	send "cd $path_main_local$path_local_proyect\r"
+	expect "$ "
 
-send "git add .\r"
-expect "$ "
+	send "git add .\r"
+	expect "$ "
 
-send "git commit -m '$message_commit'\r"
-expect "$ "
+	send "git commit -m '$message_commit'\r"
+	expect "$ "
 
-send "git push origin $branch_github\r"
-expect {
-	"$ " {
-		puts "PUSH OK"
-	}	
-}
-
-spawn ssh -i $pem_file $user_server@$server
-expect "$ "
-
-send "sudo su\r"
-expect "# "
-
-send "su ubuntu\r"
-expect "$ "
-
-send "cd $path_proyect_remote\r"
-expect "$ "
-
-send "git pull origin $branch_github\r"
-expect {
-	"*Already up-to-date*" {
-		puts "TODO ESTÁ ACTUALIZADO"
+	send "git push origin $branch_github\r"
+	expect {
+		"$ " {
+			puts "PUSH OK"
+		}	
 	}
-	"*changed*" {
-		puts "PULL EXITOSO"
+
+	spawn ssh -i $pem_file $user_server@$server
+	expect "$ "
+
+	send "sudo su\r"
+	expect "# "
+
+	send "su ubuntu\r"
+	expect "$ "
+
+	send "cd $path_remote_proyect\r"
+	expect "$ "
+
+	send "git pull origin $branch_github\r"
+	expect {
+		"*Already up-to-date*" {
+			puts "TODO ESTÁ ACTUALIZADO"
+		}
+		"*changed*" {
+			puts "PULL EXITOSO"
+		}
 	}
-}
