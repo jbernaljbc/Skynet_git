@@ -90,8 +90,8 @@ proc cfg::parse_file {filename} {
 	set systemTime 			[clock seconds]
 	set iso_date 			[clock format $systemTime -format {%Y%m%d%H%M%S}]
 
-	set branch_github		[lindex $argv 0]
-	set folder_deploy		[lindex $argv 1]
+	set folder_deploy		[lindex $argv 0]
+	set branch_github		[lindex $argv 1]
 
 	set path_proyect 		$path_main[concat $folder_deploy]
 	set path_proyect_new	$path_main$folder_deploy[concat _$iso_date]
