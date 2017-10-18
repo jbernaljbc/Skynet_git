@@ -76,7 +76,9 @@ proc cfg::parse_file {filename} {
 		close $fd
 	}
 
-	cfg::parse_file repo.cfg
+	set config_path "/home/jbernal/Documentos/Tcl/Skynet_git/"
+
+	cfg::parse_file $config_path[concat repo.cfg]
 
 	set server 				$cfg::SERVER(server_ip)
 	set path_main_remote 	$cfg::SERVER(path_main)
