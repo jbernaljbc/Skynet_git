@@ -190,4 +190,4 @@ proc cfg::parse_file {filename} {
 	send "exit\r"
 	expect "$ "
 
-	exec xdotool search "Google Chrome" windowactivate --sync key --clearmodifiers ctrl+r
+	exec xdotool search "Google Chrome" windowactivate --sync key --clearmodifiers F5
