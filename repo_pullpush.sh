@@ -182,12 +182,24 @@ proc cfg::parse_file {filename} {
 	}
 
 	send "exit\r"
-	expect "# "
+	expect {
+		"# " {
+			puts "DESCONECTA USER UBUNTU"
+		}
+	}
 
 	send "exit\r"
-	expect "$ "
+	expect {
+		"$ " {
+			puts "DESCONECTA USER SU"
+		}
+	}
 
 	send "exit\r"
-	expect "$ "
+	expect {
+		"*closed*" {
+			puts "DESCONECTA SERVER"
+		}
+	}
 
 	exec xdotool search "Google Chrome" windowactivate --sync key --clearmodifiers F5
