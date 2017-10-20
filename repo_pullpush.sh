@@ -76,7 +76,7 @@ proc cfg::parse_file {filename} {
 		close $fd
 	}
 
-	set config_path "/home/jbernal/Documentos/Tcl/Skynet_git/"
+	set config_path "/opt/Skynet_git/"
 
 	cfg::parse_file $config_path[concat repo.cfg]
 
@@ -136,6 +136,16 @@ proc cfg::parse_file {filename} {
 	send "cd $path_main_local$path_local_proyect\r"
 	expect "$ "
 
+	send "gulp\r"
+	expect {
+		"*Finished default*" {
+			puts "GULP OK"
+		}
+		"$ " {
+			puts "FIN GULP"
+		}
+	}
+
 	send "git add .\r"
 	expect "$ "
 
@@ -170,3 +180,14 @@ proc cfg::parse_file {filename} {
 			puts "PULL EXITOSO"
 		}
 	}
+
+	send "exit\r"
+	expect "# "
+
+	send "exit\r"
+	expect "$ "
+
+	send "exit\r"
+	expect "$ "
+
+	exec xdotool search "Google Chrome" windowactivate --sync key --clearmodifiers ctrl+r

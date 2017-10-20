@@ -76,7 +76,7 @@ proc cfg::parse_file {filename} {
 		close $fd
 	}
 
-	set config_path "/home/jbernal/Documentos/Tcl/Skynet_git/"
+	set config_path "/opt/Skynet_git/"
 
 	cfg::parse_file $config_path[concat repo.cfg]
 
@@ -114,7 +114,10 @@ proc cfg::parse_file {filename} {
 	send "sudo su\r"
 	expect "# "
 
-	send "mv $path_proyect $path_proyect_new\r"
+	#send "mv $path_proyect $path_proyect_new\r"
+	#expect "# "
+
+	send "rm -rf $path_proyect\r"
 	expect "# "
 
 	send "mkdir $path_proyect\r"
@@ -127,6 +130,9 @@ proc cfg::parse_file {filename} {
 	expect "$ "
 
 	send "cd $path_proyect\r"
+	expect "$ "
+
+	send "git fetch\r"
 	expect "$ "
 
 	send "git clone $repositorio $path_proyect\r"
@@ -143,6 +149,9 @@ proc cfg::parse_file {filename} {
 	}
 
 	send "git config credential.helper store\r"
+	expect "$ "
+
+	send "git fetch\r"
 	expect "$ "
 
 	send "git checkout --track origin/$branch_github\r"
