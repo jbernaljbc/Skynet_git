@@ -202,4 +202,4 @@ proc cfg::parse_file {filename} {
 		}
 	}
 
-	exec xdotool search "Google Chrome" windowactivate --sync key --clearmodifiers F5
+	exec xdotool search "Google Chrome" windowactivate --sync key --clearmodifiers SHIFT+CTRL+R
