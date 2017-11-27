@@ -171,7 +171,14 @@ proc cfg::parse_file {filename} {
 
 	send "composer install\r"
 	expect {
+		"*removed*" {
+			send "php artisan cache:clear\r"
+			expect "$ "
+		}
 		"*ompiling common classes*" {
 			puts "OK CTM!"
 		}
 	}
+
+	send "php artisan cache:clear\r"
+	expect "$ "
